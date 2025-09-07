@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "nome": "Tiranossauro Rex",
+    "imagem": "assets/images/t-rex.png",
+    "comprimento": 13,
+    "peso": 9,
+    "velocidade": 27,
+    "inteligencia": 7,
+    "agressividade": 10
+  },
+  {
+    "id": 2,
+    "nome": "Velociraptor",
+    "imagem": "assets/images/velociraptor.png",
+    "comprimento": 3,
+    "peso": 0.15,
+    "velocidade": 60,
+    "inteligencia": 10,
+    "agressividade": 9
+  },
+  {
+    "id": 3,
+    "nome": "Tricerátops",
+    "imagem": "assets/images/triceratops.png",
+    "comprimento": 9,
+    "peso": 10,
+    "velocidade": 30,
+    "inteligencia": 4,
+    "agressividade": 7
+  },
+  {
+    "id": 4,
+    "nome": "Braquiossauro",
+    "imagem": "assets/images/brachiosaurus.png",
+    "comprimento": 26,
+    "peso": 50,
+    "velocidade": 10,
+    "inteligencia": 3,
+    "agressividade": 2
+  },
+  {
+    "id": 5,
+    "nome": "Espinossauro",
+    "imagem": "assets/images/spinosaurus.png",
+    "comprimento": 18,
+    "peso": 8,
+    "velocidade": 25,
+    "inteligencia": 8,
+    "agressividade": 9
+  },
+  {
+    "id": 6,
+    "nome": "Pteranodonte",
+    "imagem": "assets/images/pteranodon.png",
+    "comprimento": 6,
+    "peso": 0.05,
+    "velocidade": 80,
+    "inteligencia": 6,
+    "agressividade": 5
+  },
+  {
+    "id": 7,
+    "nome": "Anquilossauro",
+    "imagem": "assets/images/ankylosaurus.png",
+    "comprimento": 8,
+    "peso": 7,
+    "velocidade": 12,
+    "inteligencia": 3,
+    "agressividade": 6
+  },
+  {
+    "id": 8,
+    "nome": "Indominus Rex",
+    "imagem": "assets/images/indominus.png",
+    "comprimento": 15,
+    "peso": 10,
+    "velocidade": 50,
+    "inteligencia": 9,
+    "agressividade": 10
+  }
+]

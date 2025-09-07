@@ -1,0 +1,200 @@
+:root {
+    --cor-fundo: #1a2a21;
+    --cor-carta: #2c3e34;
+    --cor-borda: #8f795b;
+    --cor-borda-interna: #5c4d3a;
+    --cor-texto-principal: #e8e8e8;
+    --cor-texto-secundario: #a7bca9;
+    --cor-destaque: #ffc107; /* Amarelo Âmbar */
+    --cor-vitoria: #5cb85c;
+    --cor-derrota: #d9534f;
+    --sombra-carta: 0 10px 25px rgba(0, 0, 0, 0.8);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* --- ESTILOS GERAIS E FUNDO --- */
+body {
+    font-family: 'Chakra Petch', sans-serif;
+    color: var(--cor-texto-principal);
+    background-color: var(--cor-fundo);
+    background-image: linear-gradient(rgba(26, 42, 33, 0.92), rgba(26, 42, 33, 0.92)), url('../assets/images/jungle-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+header {
+    padding: 15px;
+    text-shadow: 0 2px 5px #000;
+}
+
+.area-jogo {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 40px;
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.jogador-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.placar {
+    font-size: 1.4em;
+    font-weight: 700;
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    border: 1px solid var(--cor-borda-interna);
+}
+
+footer {
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* --- DESIGN DA CARTA E ANIMAÇÃO DE VIRAR --- */
+.carta-container {
+    perspective: 1200px;
+    height: 480px;
+    width: 320px;
+}
+
+.carta {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+}
+
+.carta.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.carta-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden; /* Safari */
+    backface-visibility: hidden;
+    background: var(--cor-carta);
+    border: 3px solid var(--cor-borda);
+    outline: 2px solid var(--cor-borda-interna);
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: var(--sombra-carta);
+    display: flex;
+    flex-direction: column;
+}
+
+.carta-verso {
+    background-image: linear-gradient(45deg, #1a2a21 25%, #2c3e34 25%, #2c3e34 50%, #1a2a21 50%, #1a2a21 75%, #2c3e34 75%, #2c3e34 100%);
+    background-size: 56.57px 56.57px;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em;
+    font-weight: 700;
+}
+
+.carta-verso::after {
+    content: 'JT';
+    border: 4px solid var(--cor-borda);
+    padding: 20px 30px;
+    border-radius: 50%;
+    text-shadow: 0 0 10px var(--cor-destaque);
+}
+
+.carta-frente {
+    transform: rotateY(180deg);
+}
+
+.carta-frente h2 {
+    color: var(--cor-destaque);
+    margin-bottom: 10px;
+    text-shadow: 0 1px 3px #000;
+}
+
+.carta-frente img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid var(--cor-borda);
+    margin-bottom: 15px;
+    background-color: #3a4f41;
+}
+
+.carta-frente ul {
+    list-style: none;
+    text-align: left;
+    flex-grow: 1;
+}
+
+.carta-frente .atributo {
+    background-color: rgba(0, 0, 0, 0.3);
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
+}
+
+.atributo.selecionavel:hover {
+    cursor: pointer;
+    background-color: var(--cor-destaque);
+    color: var(--cor-fundo);
+    transform: scale(1.05);
+}
+
+.atributo .valor { margin-left: auto; font-weight: 400; }
+.atributo.destaque-vitoria { background-color: var(--cor-vitoria); color: white; }
+.atributo.destaque-derrota { background-color: var(--cor-derrota); color: white; }
+.atributo.destaque-empate { background-color: var(--cor-destaque); color: #1a2a21; }
+
+/* --- BOTÕES E MENSAGENS --- */
+#area-mensagens { font-size: 1.3em; min-height: 30px; font-weight: 700; text-shadow: 0 1px 3px #000; }
+
+#btn-proxima-rodada {
+    padding: 12px 25px;
+    margin-top: 15px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--cor-fundo);
+    background-color: var(--cor-destaque);
+    border: 2px solid var(--cor-borda);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    text-transform: uppercase;
+}
+
+#btn-proxima-rodada:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--cor-destaque); }
+.hidden { display: none; }
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    .area-jogo { flex-direction: column; align-items: center; gap: 20px; }
+    .carta-container { width: 280px; height: 420px; }
+}

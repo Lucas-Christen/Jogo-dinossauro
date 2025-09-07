@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurassic Trunfo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Jurassic Trunfo</h1>
+    </header>
+
+    <main class="area-jogo">
+        <div class="jogador-area">
+            <div class="placar" id="placar-jogador">👤 Jogador: 0</div>
+            <div id="carta-jogador" class="carta-container">
+                </div>
+        </div>
+
+        <div class="jogador-area">
+            <div class="placar" id="placar-cpu">🤖 CPU: 0</div>
+            <div id="carta-cpu" class="carta-container">
+                </div>
+        </div>
+    </main>
+
+    <footer>
+        <div id="area-mensagens">Carregando o jogo...</div>
+        <button id="btn-proxima-rodada" class="hidden">Próxima Rodada</button>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
