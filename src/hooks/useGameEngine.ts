@@ -1,83 +1,73 @@
 // src/hooks/useGameEngine.ts
 import { useEffect, useReducer, useCallback } from 'react';
 import { DINOSAURS_DATA } from '../data/dinosaurs';
-import type { Dinosaur, DinosaurAttributes } from '../types/dinosaur';
+import type { DinosaurAttributes, GameSettings, Player } from '../game/types';
 import { shuffleDeck, getCpuChoice } from '../utils/gameLogic';
 import { useGameAnimations } from './useGameAnimations';
 import { gameReducer, initialState } from '../game/gameReducer';
 
-export const useGameEngine = () => {
+export const useGameEngine = (settings: GameSettings) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const { playerDeck, cpuDeck, playerCard, cpuCard, isPlayerTurn, isResolving, drawPile, roundWinner } = state;
+  const { players, activePlayerId, isResolving, drawPile } = state;
 
-  const { runRoundEndSequence, clearAnimations, ...animationProps } = useGameAnimations();
+  const advanceToNextRound = useCallback(() => {
+    dispatch({ type: 'ADVANCE_TO_NEXT_ROUND' });
+  }, []);
 
-  // Inicia o jogo
+  const { runRoundEndSequence, ...animationProps } = useGameAnimations(advanceToNextRound);
+
   useEffect(() => {
     const allCards = shuffleDeck(DINOSAURS_DATA);
-    dispatch({
-      type: 'INITIALIZE_DECKS',
-      payload: { playerDeck: allCards.slice(0, 16), cpuDeck: allCards.slice(16, 32) },
-    });
-  }, []);
-  
-  // Controla a jogada da CPU
+    const cardsPerPlayer = Math.floor(allCards.length / settings.playerCount);
+    const newPlayers: Player[] = Array.from({ length: settings.playerCount }, (_, i) => ({
+      id: i,
+      deck: allCards.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer),
+      isEliminated: false,
+    }));
+    dispatch({ type: 'START_GAME', payload: { players: newPlayers, settings } });
+  }, [settings]);
+
   useEffect(() => {
-    if (!isPlayerTurn && !isResolving && playerCard && cpuCard) {
-      // A linha que causava o bug foi removida daqui.
+    const activePlayer = players[activePlayerId];
+    if (activePlayer && activePlayer.id !== 0 && isResolving) {
       const timer = setTimeout(() => {
-        const cpuChoice = getCpuChoice(cpuCard, cpuDeck.length, playerDeck.length + cpuDeck.length);
+        const cpuCard = activePlayer.deck[0];
+        const playerCard = players.find(p => p.id === 0)?.deck[0] || null;
+        const cpuChoice = getCpuChoice(cpuCard, playerCard, state.settings!.difficulty);
         handleAttributeSelect(cpuChoice);
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isPlayerTurn, isResolving, playerCard, cpuCard]);
+  }, [activePlayerId, isResolving, players]);
 
-
-  // Função para avançar para a próxima rodada
-  const advanceToNextRound = useCallback(() => {
-    if (!playerCard || !cpuCard) return;
-
-    let cardsToAnimate: { card: Dinosaur; destination: 'player' | 'cpu' }[] = [];
-    if (roundWinner && roundWinner !== 'draw') {
-      cardsToAnimate = [...drawPile, playerCard, cpuCard].map(card => ({ card, destination: roundWinner }));
-      runRoundEndSequence(roundWinner, cardsToAnimate);
-    }
-    
-    dispatch({ type: 'START_NEXT_ROUND' });
-    
-    setTimeout(() => {
-      clearAnimations();
-    }, 1500);
-
-  }, [playerCard, cpuCard, drawPile, roundWinner, runRoundEndSequence, clearAnimations]);
-
-  // Função para o jogador selecionar um atributo
   const handleAttributeSelect = useCallback((attribute: keyof DinosaurAttributes) => {
-    if (isResolving || !playerCard || !cpuCard) return;
+    const activePlayer = players[activePlayerId];
+    if (isResolving || !activePlayer || activePlayer.deck.length === 0) return;
 
-    dispatch({ type: 'START_ROUND_RESOLUTION', payload: { attribute } });
-    
-    const playerValue = playerCard[attribute];
-    const cpuValue = cpuCard[attribute];
-    const playerWins = (attribute === 'anos') ? playerValue < cpuValue : playerValue > cpuValue;
-    const cpuWins = (attribute === 'anos') ? cpuValue < playerValue : cpuValue > playerValue;
-    
-    const winner = playerWins ? 'player' : cpuWins ? 'cpu' : 'draw';
+    dispatch({ type: 'SELECT_ATTRIBUTE', payload: { attribute } });
 
     setTimeout(() => {
-      const historyMessage = winner === 'player' ? `Você venceu com ${attribute}: ${playerValue} vs ${cpuValue}`
-        : winner === 'cpu' ? `CPU venceu com ${attribute}: ${cpuValue} vs ${playerValue}`
-        : `Empate em ${attribute}: ${playerValue} vs ${cpuValue}`;
+      const activePlayers = players.filter(p => !p.isEliminated);
+      const scores = activePlayers.map(p => ({
+        id: p.id,
+        value: p.deck[0][attribute],
+      }));
+
+      const isYears = attribute === 'anos';
+      const bestScore = isYears ? Math.min(...scores.map(s => s.value)) : Math.max(...scores.map(s => s.value));
+      const winners = scores.filter(s => s.value === bestScore);
       
-      const message = winner === 'player' ? 'Você ganhou a rodada!' 
-        : winner === 'cpu' ? 'A CPU ganhou a rodada!' 
-        : 'Empate! As cartas irão para o monte.';
+      const winnerId = winners.length === 1 ? winners[0].id : 'draw';
+      const message = winnerId !== 'draw' ? `Jogador ${winnerId + 1} venceu a rodada!` : 'Empate!';
+      const historyMessage = `${String(attribute)}: ${scores.map(s => `J${s.id + 1}: ${s.value}`).join(' | ')}`;
+
+      dispatch({ type: 'RESOLVE_ROUND', payload: { winnerId, message, historyMessage } });
       
-      dispatch({ type: 'RESOLVE_ROUND', payload: { winner, message, historyMessage } });
-      dispatch({ type: 'AWAIT_NEXT_ROUND' });
-    }, 1000);
-  }, [isResolving, playerCard, cpuCard, drawPile, runRoundEndSequence]);
+      const cardsInPlay = activePlayers.map(p => p.deck[0]);
+      runRoundEndSequence(winnerId, [...drawPile, ...cardsInPlay]);
+
+    }, 1500);
+  }, [isResolving, players, activePlayerId, drawPile, runRoundEndSequence]);
 
   return {
     ...state,

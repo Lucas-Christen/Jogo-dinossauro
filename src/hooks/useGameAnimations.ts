@@ -1,11 +1,11 @@
 // src/hooks/useGameAnimations.ts
 import { useState, useEffect, useCallback } from 'react';
-import type { Dinosaur } from '../types/dinosaur';
+import type { Dinosaur, Player } from '../game/types';
 
-export const useGameAnimations = () => {
+export const useGameAnimations = (onAnimationComplete: () => void) => {
   const [flashColor, setFlashColor] = useState<'green' | 'red' | null>(null);
-  const [winnerForAnimation, setWinnerForAnimation] = useState<'player' | 'cpu' | null>(null);
-  const [animatingCards, setAnimatingCards] = useState<{ card: Dinosaur; destination: 'player' | 'cpu' }[]>([]);
+  const [winnerForAnimation, setWinnerForAnimation] = useState<number | null>(null);
+  const [animatingCards, setAnimatingCards] = useState<{ card: Dinosaur; destination: number }[]>([]);
   const [startCardAnimation, setStartCardAnimation] = useState(false);
 
   useEffect(() => {
@@ -15,22 +15,25 @@ export const useGameAnimations = () => {
     }
   }, [animatingCards]);
 
-  const runRoundEndSequence = useCallback((winner: 'player' | 'cpu', cardsToAnimate: { card: Dinosaur; destination: 'player' | 'cpu' }[]) => {
-    if (winner === 'player') {
-      setFlashColor('green');
-    } else if (winner === 'cpu') {
-      setFlashColor('red');
+  const runRoundEndSequence = useCallback((winnerId: number | 'draw', cardsToAnimate: Dinosaur[]) => {
+    if (winnerId === 'draw') {
+      // Lógica para empate (se houver, como um flash neutro)
+    } else {
+      const isPlayerWinner = winnerId === 0;
+      setFlashColor(isPlayerWinner ? 'green' : 'red');
+      setWinnerForAnimation(winnerId);
+      setAnimatingCards(cardsToAnimate.map(card => ({ card, destination: winnerId })));
     }
-    setWinnerForAnimation(winner);
-    setAnimatingCards(cardsToAnimate);
-  }, []);
 
-  const clearAnimations = useCallback(() => {
-    setAnimatingCards([]);
-    setStartCardAnimation(false);
-    setFlashColor(null);
-    setWinnerForAnimation(null);
-  }, []);
+    const animationDuration = 1500;
+    setTimeout(() => {
+      setAnimatingCards([]);
+      setStartCardAnimation(false);
+      setFlashColor(null);
+      setWinnerForAnimation(null);
+      onAnimationComplete();
+    }, animationDuration);
+  }, [onAnimationComplete]);
 
   return {
     flashColor,
@@ -38,6 +41,5 @@ export const useGameAnimations = () => {
     animatingCards,
     startCardAnimation,
     runRoundEndSequence,
-    clearAnimations,
   };
 };

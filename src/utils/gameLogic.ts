@@ -1,20 +1,36 @@
 // src/utils/gameLogic.ts
-
 import type { Dinosaur, DinosaurAttributes } from '../types/dinosaur';
+import type { Difficulty } from '../game/types';
 
 export const shuffleDeck = (deck: Dinosaur[]): Dinosaur[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-export const getCpuChoice = (card: Dinosaur, cpuDeckSize: number, totalCards: number): keyof DinosaurAttributes => {
+// IA da CPU atualizada para lidar com diferentes dificuldades
+export const getCpuChoice = (
+  card: Dinosaur,
+  playerCard: Dinosaur | null,
+  difficulty: Difficulty
+): keyof DinosaurAttributes => {
   const attributes: (keyof DinosaurAttributes)[] = ['comprimento', 'peso', 'velocidade', 'inteligencia', 'forca_mordida', 'defesa', 'anos'];
-  const cpuDeckPercentage = cpuDeckSize / totalCards;
-  let bestAttribute: keyof DinosaurAttributes = 'comprimento';
-  let maxValue = -Infinity;
 
-  if (cpuDeckPercentage < 0.25) { // Modo Desesperado
+  // Nível Impossível: A CPU "vê" sua carta e joga para ganhar
+  if (difficulty === 'impossible' && playerCard) {
     for (const attr of attributes) {
-      if (attr === 'anos') continue;
+      const cpuValue = card[attr];
+      const playerValue = playerCard[attr];
+      if (attr === 'anos' ? cpuValue < playerValue : cpuValue > playerValue) {
+        return attr; // Encontra a primeira jogada vencedora
+      }
+    }
+  }
+
+  // Nível Difícil: Sempre escolhe o melhor atributo
+  if (difficulty === 'hard' || difficulty === 'impossible') { // 'impossible' usa isso como fallback
+    let bestAttribute: keyof DinosaurAttributes = 'comprimento';
+    let maxValue = -Infinity;
+    for (const attr of attributes) {
+      if (attr === 'anos') continue; // Evita a aposta arriscada de 'anos'
       if (card[attr] > maxValue) {
         maxValue = card[attr];
         bestAttribute = attr;
@@ -23,20 +39,14 @@ export const getCpuChoice = (card: Dinosaur, cpuDeckSize: number, totalCards: nu
     return bestAttribute;
   }
 
-  // Modo Normal
-  for (const attr of attributes) {
-    const value = card[attr];
-    if (attr === 'anos') {
-      if (value < 65 && maxValue < 80) {
-        bestAttribute = attr;
-        maxValue = 90;
-      }
-    } else {
-      if (value > maxValue) {
-        maxValue = value;
-        bestAttribute = attr;
-      }
-    }
+  // Nível Médio: Escolhe entre os 2 melhores atributos
+  if (difficulty === 'medium') {
+    const sortedAttrs = [...attributes]
+      .filter(attr => attr !== 'anos')
+      .sort((a, b) => card[b] - card[a]);
+    return sortedAttrs[Math.floor(Math.random() * 2)]; // Escolhe o melhor ou o segundo melhor
   }
-  return bestAttribute;
+
+  // Nível Fácil: Escolhe qualquer atributo aleatoriamente
+  return attributes[Math.floor(Math.random() * attributes.length)];
 };

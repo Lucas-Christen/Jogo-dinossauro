@@ -2,102 +2,112 @@
 import type { GameState, GameAction } from './types';
 
 export const initialState: GameState = {
-  playerDeck: [],
-  cpuDeck: [],
+  settings: null,
+  players: [],
+  activePlayerId: 0,
   drawPile: [],
   history: [],
-  playerCard: null,
-  cpuCard: null,
-  isCpuCardFlipped: false,
-  message: 'O jogo vai começar!',
-  isPlayerTurn: true,
+  areCardsFlipped: false,
+  message: 'Configurando o jogo...',
   selectedAttribute: null,
   isResolving: false,
-  roundWinner: null,
+  roundWinnerId: null,
   showNextRoundButton: false,
+  gamePhase: 'menu',
+  gameWinner: null,
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'INITIALIZE_DECKS':
+    case 'START_GAME':
       return {
-        ...state,
-        playerDeck: action.payload.playerDeck,
-        cpuDeck: action.payload.cpuDeck,
-        playerCard: action.payload.playerDeck[0] || null,
-        cpuCard: action.payload.cpuDeck[0] || null,
-        message: 'Sua vez! Escolha um atributo.',
+        ...initialState,
+        gamePhase: 'playing',
+        players: action.payload.players,
+        settings: action.payload.settings,
+        message: 'O jogo começou! Sua vez.',
       };
 
-    case 'START_ROUND_RESOLUTION':
+    case 'SELECT_ATTRIBUTE':
       return {
         ...state,
-        isResolving: true, // Apenas aqui o jogo fica ocupado
-        isCpuCardFlipped: true,
+        isResolving: true,
         selectedAttribute: action.payload.attribute,
+        areCardsFlipped: true,
       };
 
-    case 'RESOLVE_ROUND': {
-      const { winner, message, historyMessage } = action.payload;
+    case 'RESOLVE_ROUND':
       return {
         ...state,
-        roundWinner: winner,
-        message,
-        history: [historyMessage, ...state.history].slice(0, 5),
+        roundWinnerId: action.payload.winnerId,
+        message: action.payload.message,
+        history: [action.payload.historyMessage, ...state.history].slice(0, 5),
       };
-    }
-    
-    case 'AWAIT_NEXT_ROUND':
+
+    case 'SHOW_NEXT_ROUND_BUTTON':
       return {
         ...state,
         showNextRoundButton: true,
-        isResolving: false, // Libera o jogo para o botão
       };
 
-    case 'START_NEXT_ROUND': {
-      const { roundWinner, drawPile, playerDeck, cpuDeck } = state;
-      const playedPlayerCard = playerDeck[0];
-      const playedCpuCard = cpuDeck[0];
+    case 'ADVANCE_TO_NEXT_ROUND': {
+      const { roundWinnerId, drawPile, players } = state;
+      const activePlayers = players.filter(p => !p.isEliminated);
+      if (activePlayers.length === 0) return state;
 
-      if (!playedPlayerCard || !playedCpuCard) return state;
+      const playedCards = activePlayers.map(p => p.deck[0]);
 
-      const cardsToTransfer = [...drawPile, playedPlayerCard, playedCpuCard];
+      let nextPlayers = players.map(p => 
+        p.isEliminated ? p : { ...p, deck: p.deck.slice(1) }
+      );
+      let nextDrawPile = [...drawPile];
+
+      if (roundWinnerId !== null && roundWinnerId !== 'draw') {
+        const winnerIndex = nextPlayers.findIndex(p => p.id === roundWinnerId);
+        if (winnerIndex !== -1) {
+          nextPlayers[winnerIndex].deck.push(...nextDrawPile, ...playedCards);
+          nextDrawPile = [];
+        }
+      } else {
+        nextDrawPile.push(...playedCards);
+      }
       
-      let nextPlayerDeck = playerDeck.slice(1);
-      let nextCpuDeck = cpuDeck.slice(1);
-      let nextTurnIsPlayer = state.isPlayerTurn;
+      let finalPlayers = nextPlayers.map(p => {
+        if (!p.isEliminated && p.deck.length === 0) {
+          return { ...p, isEliminated: true };
+        }
+        return p;
+      });
 
-      if (roundWinner === 'player') {
-        nextPlayerDeck.push(...cardsToTransfer);
-        nextTurnIsPlayer = true;
-      } else if (roundWinner === 'cpu') {
-        nextCpuDeck.push(...cardsToTransfer);
-        nextTurnIsPlayer = false;
-      } else { 
-        nextTurnIsPlayer = state.isPlayerTurn;
+      const remainingPlayers = finalPlayers.filter(p => !p.isEliminated);
+      if (remainingPlayers.length <= 1) {
+        return {
+          ...state,
+          players: finalPlayers,
+          gamePhase: 'gameOver',
+          gameWinner: remainingPlayers[0] || null,
+          message: `Fim de Jogo! O vencedor é o Jogador ${remainingPlayers[0]?.id + 1}!`,
+        };
       }
 
-      const isGameOver = nextPlayerDeck.length === 0 || nextCpuDeck.length === 0;
-
+      let nextActivePlayerId = (state.activePlayerId + 1) % state.players.length;
+      while(finalPlayers[nextActivePlayerId].isEliminated) {
+        nextActivePlayerId = (nextActivePlayerId + 1) % state.players.length;
+      }
+      
       return {
         ...state,
-        playerDeck: nextPlayerDeck,
-        cpuDeck: nextCpuDeck,
-        drawPile: roundWinner === 'draw' ? cardsToTransfer : [],
-        playerCard: nextPlayerDeck[0] || null,
-        cpuCard: nextCpuDeck[0] || null,
-        isPlayerTurn: nextTurnIsPlayer,
-        message: isGameOver 
-          ? (nextPlayerDeck.length === 0 ? 'Você perdeu o jogo!' : 'Você ganhou o jogo!')
-          : (nextTurnIsPlayer ? 'Sua vez! Escolha um atributo.' : 'Vez da CPU...'),
-        isCpuCardFlipped: false,
+        players: finalPlayers,
+        drawPile: nextDrawPile,
+        activePlayerId: nextActivePlayerId,
+        isResolving: nextActivePlayerId !== 0,
+        areCardsFlipped: false,
         selectedAttribute: null,
-        roundWinner: null,
-        isResolving: false, // <<< CORREÇÃO CRÍTICA: Libera o estado para o próximo turno
+        roundWinnerId: null,
         showNextRoundButton: false,
+        message: nextActivePlayerId === 0 ? 'Sua vez! Escolha um atributo.' : `Vez do Jogador ${nextActivePlayerId + 1}...`,
       };
     }
-
     default:
       return state;
   }
