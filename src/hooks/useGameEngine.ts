@@ -23,7 +23,8 @@ export const useGameEngine = () => {
   
   // Controla a jogada da CPU
   useEffect(() => {
-    if (!isPlayerTurn && isResolving && playerCard && cpuCard) {
+    if (!isPlayerTurn && !isResolving && playerCard && cpuCard) {
+      // A linha que causava o bug foi removida daqui.
       const timer = setTimeout(() => {
         const cpuChoice = getCpuChoice(cpuCard, cpuDeck.length, playerDeck.length + cpuDeck.length);
         handleAttributeSelect(cpuChoice);
@@ -37,17 +38,14 @@ export const useGameEngine = () => {
   const advanceToNextRound = useCallback(() => {
     if (!playerCard || !cpuCard) return;
 
-    // 1. Inicia as animações
     let cardsToAnimate: { card: Dinosaur; destination: 'player' | 'cpu' }[] = [];
     if (roundWinner && roundWinner !== 'draw') {
       cardsToAnimate = [...drawPile, playerCard, cpuCard].map(card => ({ card, destination: roundWinner }));
       runRoundEndSequence(roundWinner, cardsToAnimate);
     }
     
-    // 2. Despacha a ação para atualizar o estado lógico do jogo
     dispatch({ type: 'START_NEXT_ROUND' });
     
-    // 3. Limpa as animações após a sua duração
     setTimeout(() => {
       clearAnimations();
     }, 1500);
@@ -67,7 +65,6 @@ export const useGameEngine = () => {
     
     const winner = playerWins ? 'player' : cpuWins ? 'cpu' : 'draw';
 
-    // Atraso para permitir que a carta da CPU vire antes de mostrar o resultado
     setTimeout(() => {
       const historyMessage = winner === 'player' ? `Você venceu com ${attribute}: ${playerValue} vs ${cpuValue}`
         : winner === 'cpu' ? `CPU venceu com ${attribute}: ${cpuValue} vs ${playerValue}`
@@ -78,9 +75,9 @@ export const useGameEngine = () => {
         : 'Empate! As cartas irão para o monte.';
       
       dispatch({ type: 'RESOLVE_ROUND', payload: { winner, message, historyMessage } });
-      dispatch({ type: 'AWAIT_NEXT_ROUND' }); // Mostra o botão "Próxima Rodada"
+      dispatch({ type: 'AWAIT_NEXT_ROUND' });
     }, 1000);
-  }, [isResolving, playerCard, cpuCard]);
+  }, [isResolving, playerCard, cpuCard, drawPile, runRoundEndSequence]);
 
   return {
     ...state,

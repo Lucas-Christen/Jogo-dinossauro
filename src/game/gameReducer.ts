@@ -32,7 +32,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_ROUND_RESOLUTION':
       return {
         ...state,
-        isResolving: true,
+        isResolving: true, // Apenas aqui o jogo fica ocupado
         isCpuCardFlipped: true,
         selectedAttribute: action.payload.attribute,
       };
@@ -51,6 +51,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         showNextRoundButton: true,
+        isResolving: false, // Libera o jogo para o botão
       };
 
     case 'START_NEXT_ROUND': {
@@ -72,8 +73,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       } else if (roundWinner === 'cpu') {
         nextCpuDeck.push(...cardsToTransfer);
         nextTurnIsPlayer = false;
-      } else { // Empate
-        nextTurnIsPlayer = state.isPlayerTurn; // Mantém o turno
+      } else { 
+        nextTurnIsPlayer = state.isPlayerTurn;
       }
 
       const isGameOver = nextPlayerDeck.length === 0 || nextCpuDeck.length === 0;
@@ -92,7 +93,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isCpuCardFlipped: false,
         selectedAttribute: null,
         roundWinner: null,
-        isResolving: !nextTurnIsPlayer && !isGameOver, // Fica resolvendo se for a vez da CPU
+        isResolving: false, // <<< CORREÇÃO CRÍTICA: Libera o estado para o próximo turno
         showNextRoundButton: false,
       };
     }
