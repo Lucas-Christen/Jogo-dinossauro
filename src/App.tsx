@@ -1,10 +1,17 @@
 // src/App.tsx
-
+import { useState } from 'react';
 import { Game } from './components/Game';
+import { Menu } from './components/Menu';
+import type { GameSettings } from './game/types';
 
 function App() {
+  const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
+
+  const handleStartGame = (settings: GameSettings) => {
+    setGameSettings(settings);
+  };
+
   return (
-    // Adicionado overflow-hidden para conter as animações das cartas
     <div className="relative min-h-screen bg-cover bg-center bg-fixed text-white font-['Chakra_Petch',_sans-serif] overflow-hidden" 
          style={{ backgroundImage: "url('/assets/images/jungle-background.jpg')" }}>
       
@@ -19,7 +26,14 @@ function App() {
         </header>
 
         <main className="flex-grow flex items-center justify-center">
-          <Game />
+          {/* Renderização condicional: mostra o menu ou o jogo */}
+          {!gameSettings ? (
+            <Menu onStartGame={handleStartGame} />
+          ) : (
+            // Por enquanto, o componente Game ainda não usa as configurações,
+            // mas já estamos passando para ele.
+            <Game settings={gameSettings} />
+          )}
         </main>
       </div>
     </div>

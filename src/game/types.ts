@@ -1,6 +1,14 @@
 // src/game/types.ts
 import type { Dinosaur, DinosaurAttributes } from '../types/dinosaur';
 
+// Novos tipos para as configurações do jogo
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'impossible';
+
+export interface GameSettings {
+  playerCount: number;
+  difficulty: Difficulty;
+}
+
 // Define o estado completo do nosso jogo
 export interface GameState {
   playerDeck: Dinosaur[];

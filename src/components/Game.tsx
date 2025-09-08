@@ -2,8 +2,15 @@
 import { Card } from './Card';
 import { HistoryLog } from './HistoryLog';
 import { useGameEngine } from '../hooks/useGameEngine';
+import type { GameSettings } from '../game/types'; // Importa o tipo
 
-export function Game() {
+// O componente agora recebe as configurações do jogo
+interface GameProps {
+  settings: GameSettings;
+}
+
+export function Game({ settings }: GameProps) {
+  // O hook ainda não usa as 'settings', mas o componente já está preparado
   const {
     playerDeck, cpuDeck, drawPile, history, playerCard, cpuCard, message, isResolving,
     isCpuCardFlipped, selectedAttribute, showNextRoundButton,
@@ -11,8 +18,9 @@ export function Game() {
     handleAttributeSelect, advanceToNextRound,
   } = useGameEngine();
 
+  // O JSX abaixo permanece exatamente o mesmo
   return (
-    // Layout principal alterado para Grid para melhor controle do rodapé
+    // ... todo o seu JSX existente ...
     <div className="w-full h-full grid grid-rows-[1fr_auto] p-2 md:p-4 relative">
       {/* Cartas em animação */}
       {animatingCards.map(({ card, destination }, index) => (
