@@ -4,7 +4,8 @@ import { Game } from './components/Game';
 
 function App() {
   return (
-    <div className="relative min-h-screen bg-cover bg-center bg-fixed text-white font-['Chakra_Petch',_sans-serif]" 
+    // Adicionado overflow-hidden para conter as animações das cartas
+    <div className="relative min-h-screen bg-cover bg-center bg-fixed text-white font-['Chakra_Petch',_sans-serif] overflow-hidden" 
          style={{ backgroundImage: "url('/assets/images/jungle-background.jpg')" }}>
       
       <div className="absolute inset-0 bg-green-950 bg-opacity-80" />

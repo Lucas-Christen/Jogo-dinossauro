@@ -1,146 +1,90 @@
 // src/components/Game.tsx
-
-import { useState, useEffect } from 'react';
-import { DINOSAURS_DATA } from '../data/dinosaurs';
-import type { Dinosaur, DinosaurAttributes } from '../types/dinosaur';
 import { Card } from './Card';
-
-const shuffleDeck = (deck: Dinosaur[]): Dinosaur[] => {
-  return [...deck].sort(() => Math.random() - 0.5);
-};
-
-// --- FUNÇÃO ATUALIZADA: Lógica da CPU com os novos atributos ---
-const getCpuChoice = (card: Dinosaur): keyof DinosaurAttributes => {
-  let bestAttribute: keyof DinosaurAttributes = 'comprimento';
-  let maxValue = 0;
-
-  // Usa a lista de chaves de atributos que definimos no Card
-  const attributes: (keyof DinosaurAttributes)[] = ['comprimento', 'peso', 'velocidade', 'inteligencia', 'forca_mordida', 'periculosidade'];
-  
-  for (const attr of attributes) {
-    if (card[attr] > maxValue) {
-      maxValue = card[attr];
-      bestAttribute = attr;
-    }
-  }
-  return bestAttribute;
-};
-// -----------------------------------------------------------
+import { HistoryLog } from './HistoryLog';
+import { useGameEngine } from '../hooks/useGameEngine';
 
 export function Game() {
-  // O RESTANTE DO CÓDIGO DESTE ARQUIVO CONTINUA EXATAMENTE O MESMO
-  // ... (toda a lógica com useState, useEffect, handleAttributeSelect)
-  // ... (todo o JSX do return)
-  const [playerDeck, setPlayerDeck] = useState<Dinosaur[]>([]);
-  const [cpuDeck, setCpuDeck] = useState<Dinosaur[]>([]);
-  const [playerCard, setPlayerCard] = useState<Dinosaur | null>(null);
-  const [cpuCard, setCpuCard] = useState<Dinosaur | null>(null);
-  const [isCpuCardFlipped, setIsCpuCardFlipped] = useState(false);
-  const [message, setMessage] = useState('O jogo vai começar!');
-  const [isPlayerTurn, setIsPlayerTurn] = useState(true);
-  const [selectedAttribute, setSelectedAttribute] = useState<keyof DinosaurAttributes | null>(null);
-
-  useEffect(() => {
-    const shuffled = shuffleDeck(DINOSAURS_DATA);
-    const half = Math.ceil(shuffled.length / 2);
-    setPlayerDeck(shuffled.slice(0, half));
-    setCpuDeck(shuffled.slice(half));
-    setMessage('Sua vez! Escolha um atributo.');
-  }, []);
-
-  useEffect(() => {
-    if (playerDeck.length === 0 || cpuDeck.length === 0) return;
-    setPlayerCard(playerDeck[0]);
-    setCpuCard(cpuDeck[0]);
-    if (!isPlayerTurn && cpuDeck.length > 0) {
-      setMessage('Vez da CPU...');
-      setTimeout(() => {
-        const cpuChoice = getCpuChoice(cpuDeck[0]);
-        handleAttributeSelect(cpuChoice);
-      }, 2000);
-    }
-  }, [isPlayerTurn, playerDeck, cpuDeck]);
-
-  const handleAttributeSelect = (attribute: keyof DinosaurAttributes) => {
-    if (!playerCard || !cpuCard) return;
-    if (!isPlayerTurn && selectedAttribute) return;
-    setSelectedAttribute(attribute);
-    setIsPlayerTurn(false);
-    setIsCpuCardFlipped(true);
-    const playerValue = playerCard[attribute];
-    const cpuValue = cpuCard[attribute];
-    const newPlayerDeck = [...playerDeck];
-    const newCpuDeck = [...cpuDeck];
-    const playedPlayerCard = newPlayerDeck.shift()!;
-    const playedCpuCard = newCpuDeck.shift()!;
-    let roundWinner: 'player' | 'cpu' | 'draw';
-    if (playerValue > cpuValue) {
-      newPlayerDeck.push(playedPlayerCard, playedCpuCard);
-      setMessage('Você ganhou a rodada!');
-      roundWinner = 'player';
-    } else if (cpuValue > playerValue) {
-      newCpuDeck.push(playedPlayerCard, playedCpuCard);
-      setMessage('A CPU ganhou a rodada!');
-      roundWinner = 'cpu';
-    } else {
-      newPlayerDeck.push(playedPlayerCard);
-      newCpuDeck.push(playedCpuCard);
-      setMessage('Empate!');
-      roundWinner = 'draw';
-    }
-    setTimeout(() => {
-      setPlayerDeck(newPlayerDeck);
-      setCpuDeck(newCpuDeck);
-      setSelectedAttribute(null);
-      if (newPlayerDeck.length === 0) {
-        setMessage('Você perdeu o jogo!');
-        return;
-      }
-      if (newCpuDeck.length === 0) {
-        setMessage('Você ganhou o jogo!');
-        return;
-      }
-      setIsCpuCardFlipped(false);
-      if (roundWinner === 'player' || roundWinner === 'draw') {
-        setIsPlayerTurn(true);
-        setMessage('Sua vez! Escolha um atributo.');
-      } else {
-        setIsPlayerTurn(false);
-      }
-    }, 3000);
-  };
+  const {
+    playerDeck, cpuDeck, drawPile, history, playerCard, cpuCard, message, isResolving,
+    isCpuCardFlipped, selectedAttribute, showNextRoundButton,
+    flashColor, winnerForAnimation, animatingCards, startCardAnimation, isPlayerTurn,
+    handleAttributeSelect, advanceToNextRound,
+  } = useGameEngine();
 
   return (
-    <>
-      <div className="flex justify-center items-start gap-8 md:gap-16 p-4">
+    // Layout principal alterado para Grid para melhor controle do rodapé
+    <div className="w-full h-full grid grid-rows-[1fr_auto] p-2 md:p-4 relative">
+      {/* Cartas em animação */}
+      {animatingCards.map(({ card, destination }, index) => (
+        <div 
+          key={card.id + '-' + index} 
+          className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-700 ease-in-out
+            ${startCardAnimation && destination === 'player' ? 'lg:-translate-x-[250%] opacity-0' : ''}
+            ${startCardAnimation && destination === 'cpu' ? 'lg:translate-x-[250%] opacity-0' : ''}
+            ${startCardAnimation ? (destination === 'player' ? '-translate-y-[200%] opacity-0' : 'translate-y-[200%] opacity-0') : ''}
+          `}
+          style={{ transitionDelay: `${index * 50}ms` }}
+        >
+          <Card dinosaur={card} isFlipped={true} />
+        </div>
+      ))}
+      
+      {/* Área principal do jogo que pode rolar se necessário */}
+      <main className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-8">
         <div className="flex flex-col items-center gap-4">
           <div className="text-center p-2 w-40 bg-black/50 backdrop-blur-sm rounded-lg border border-amber-600/50">
             👤 Jogador: {playerDeck.length}
           </div>
-          <Card 
-            dinosaur={playerCard} 
-            isFlipped={true} 
-            isPlayerCard={isPlayerTurn}
+          <Card
+            dinosaur={playerCard}
+            isFlipped={!!playerCard && animatingCards.length === 0}
+            isPlayerCard={!isResolving && isPlayerTurn}
             onAttributeSelect={handleAttributeSelect}
-            //selectedAttribute={selectedAttribute} 
+            selectedAttribute={selectedAttribute}
+            isWinner={winnerForAnimation === 'player'}
           />
         </div>
-
+        <div className="flex flex-col items-center gap-4 lg:order-none order-first">
+          <div className="text-center p-2 w-40 bg-black/50 backdrop-blur-sm rounded-lg border border-gray-400/50">
+            ⚪️ Monte: {drawPile.length}
+          </div>
+          <HistoryLog entries={history} />
+        </div>
         <div className="flex flex-col items-center gap-4">
           <div className="text-center p-2 w-40 bg-black/50 backdrop-blur-sm rounded-lg border border-amber-600/50">
             🤖 CPU: {cpuDeck.length}
           </div>
-          <Card 
-            dinosaur={cpuCard} 
-            isFlipped={isCpuCardFlipped} 
-            //selectedAttribute={selectedAttribute} 
+          <Card
+            dinosaur={cpuCard}
+            isFlipped={isCpuCardFlipped && animatingCards.length === 0}
+            selectedAttribute={selectedAttribute}
+            isWinner={winnerForAnimation === 'cpu'}
           />
         </div>
-      </div>
+      </main>
       
-      <footer className="fixed bottom-0 left-0 right-0 py-4 text-center bg-black/60 backdrop-blur-sm border-t border-amber-600/30">
-        <p className="text-xl font-bold text-amber-300 drop-shadow-md">{message}</p>
+      {/* Efeito de flash na tela */}
+      {flashColor && (
+        <div
+          className={`fixed inset-0 pointer-events-none animate-pulse-once
+            ${flashColor === 'green' ? 'bg-green-500/30' : 'bg-red-500/30'}`}
+        />
+      )}
+
+      {/* Rodapé fixo na parte inferior */}
+      <footer className="w-full py-4 text-center bg-black/60 backdrop-blur-sm border-t border-amber-600/30">
+        <div className="flex flex-col items-center justify-center gap-4 h-20">
+          <p className="text-xl font-bold text-amber-300 drop-shadow-md h-8">{message}</p>
+          {showNextRoundButton && (
+            <button
+              onClick={advanceToNextRound}
+              className="px-6 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105 animate-pulse"
+            >
+              Próxima Rodada
+            </button>
+          )}
+        </div>
       </footer>
-    </>
+    </div>
   );
 }
